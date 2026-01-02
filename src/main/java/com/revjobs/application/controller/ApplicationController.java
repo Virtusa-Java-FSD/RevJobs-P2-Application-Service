@@ -3,13 +3,20 @@ package com.revjobs.application.controller;
 import com.revjobs.application.model.Application;
 import com.revjobs.application.model.ApplicationStatus;
 import com.revjobs.application.service.ApplicationService;
+import com.revjobs.application.service.FileStorageService;
 import com.revjobs.common.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/applications")
@@ -17,6 +24,7 @@ import java.util.List;
 public class ApplicationController {
 
     private final ApplicationService applicationService;
+    private final FileStorageService fileStorageService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<Application>> createApplication(@RequestBody Application application) {
@@ -60,5 +68,56 @@ public class ApplicationController {
     public ResponseEntity<ApiResponse<Void>> deleteApplication(@PathVariable Long id) {
         applicationService.deleteApplication(id);
         return ResponseEntity.ok(ApiResponse.success("Application deleted successfully", null));
+    }
+
+    /**
+     * Upload resume file
+     * 
+     * @param file the resume file to upload
+     * @return the URL path to access the uploaded file
+     */
+    @PostMapping("/upload")
+    public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
+        try {
+            String fileUrl = fileStorageService.storeFile(file);
+            Map<String, String> response = new HashMap<>();
+            response.put("url", fileUrl);
+            response.put("message", "File uploaded successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
+    }
+
+    /**
+     * Download/view uploaded file
+     * 
+     * @param filename the name of the file to download
+     * @return the file as a resource
+     */
+    @GetMapping("/files/{filename:.+}")
+    public ResponseEntity<Resource> downloadFile(@PathVariable String filename) {
+        try {
+            Resource resource = fileStorageService.loadFileAsResource(filename);
+
+            // Determine content type
+            String contentType = "application/octet-stream";
+            if (filename.toLowerCase().endsWith(".pdf")) {
+                contentType = "application/pdf";
+            } else if (filename.toLowerCase().endsWith(".doc")) {
+                contentType = "application/msword";
+            } else if (filename.toLowerCase().endsWith(".docx")) {
+                contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
