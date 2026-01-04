@@ -44,6 +44,47 @@ public class Application {
     @Column(length = 255)
     private String jobTitle;
 
+    // Personal Information
+    @Column(length = 255)
+    private String applicantName;
+
+    @Column(length = 20)
+    private String applicantPhone;
+
+    @Column(length = 20)
+    private String gender;
+
+    @Column(length = 100)
+    private String nationality;
+
+    @Column(length = 255)
+    private String currentLocation;
+
+    // Professional Details
+    private Integer yearsOfExperience;
+
+    @Column(length = 255)
+    private String currentCompany;
+
+    @Column(length = 500)
+    private String education;
+
+    @Column(columnDefinition = "TEXT")
+    private String skills;
+
+    // Additional Information
+    @Column(length = 500)
+    private String linkedinUrl;
+
+    @Column(length = 500)
+    private String portfolioUrl;
+
+    @Column(length = 100)
+    private String expectedSalary;
+
+    @Column(length = 100)
+    private String noticePeriod;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private ApplicationStatus status = ApplicationStatus.PENDING;
