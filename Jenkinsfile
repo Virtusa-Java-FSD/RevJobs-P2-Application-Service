@@ -9,7 +9,7 @@ pipeline {
     environment {
         REMOTE_HOST = "${env.EC2_SERVICES_IP}"
         REMOTE_USER = "ec2-user"
-        REMOTE_DIR = "/home/ec2-user/microservices/application-service"
+        REMOTE_DIR = "/home/ec2-user/revjobs/revjob_p1_microservices/application-service/target"
         SSH_CREDENTIALS_ID = "ec2-ssh-key"
     }
 
@@ -47,13 +47,18 @@ pipeline {
                         # 2. Deployment Steps
                         $remote = "$env:REMOTE_USER@$env:REMOTE_HOST"
                         
-                        ssh -i $keyPath -o StrictHostKeyChecking=no $remote "pkill -f application-service; exit 0"
+                        # Stop service
+                        ssh -i $keyPath -o StrictHostKeyChecking=no $remote "sudo systemctl stop application-service"
+                        
+                        # Create dir
                         ssh -i $keyPath -o StrictHostKeyChecking=no $remote "mkdir -p $env:REMOTE_DIR"
                         
+                        # Copy new jar
                         $jarFile = Get-Item "target/*.jar"
-                        scp -i $keyPath -o StrictHostKeyChecking=no $jarFile $remote":"$env:REMOTE_DIR/application-service.jar
+                        scp -i $keyPath -o StrictHostKeyChecking=no $jarFile $remote":"$env:REMOTE_DIR/application-service-1.0.0.jar
                         
-                        ssh -i $keyPath -o StrictHostKeyChecking=no $remote "nohup java -jar $env:REMOTE_DIR/application-service.jar > $env:REMOTE_DIR/log.txt 2>&1 &"
+                        # Start service
+                        ssh -i $keyPath -o StrictHostKeyChecking=no $remote "sudo systemctl start application-service"
                     '''
                 }
             }
